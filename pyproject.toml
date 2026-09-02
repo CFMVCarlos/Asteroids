@@ -1,0 +1,19 @@
+[project]
+name = "asteroids"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Carlos Valente", email = "cfmvcarlos@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pygame==2.6.1",
+]
+
+[project.scripts]
+asteroids = "asteroids:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
