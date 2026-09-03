@@ -11,3 +11,8 @@ wheels/
 
 game_state.jsonl
 game_events.jsonl
+
+# Agents & Graphify cache
+.agents/
+graphify-out/
+
