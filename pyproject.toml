@@ -20,6 +20,7 @@ dev = [
 ]
 
 [tool.pydoclint]
+style = "numpy"
 exclude = '\.venv|\.agents|__pycache__'
 
 [tool.basedpyright]

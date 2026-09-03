@@ -1,3 +1,7 @@
+"""Telemetry and event logging module for Asteroids."""
+
+from __future__ import annotations
+
 import inspect
 import json
 import math
@@ -6,6 +10,22 @@ from typing import NotRequired, TypedDict
 
 
 class SpriteInfo(TypedDict):
+    """Serialized sprite state information.
+
+    Attributes
+    ----------
+    type : str
+        Class name of the sprite entity.
+    pos : NotRequired[list[float]]
+        2D position coordinates [x, y].
+    vel : NotRequired[list[float]]
+        2D velocity coordinates [vx, vy].
+    rad : NotRequired[float]
+        Entity radius.
+    rot : NotRequired[float]
+        Entity rotation in degrees.
+    """
+
     type: str
     pos: NotRequired[list[float]]
     vel: NotRequired[list[float]]
@@ -14,23 +34,34 @@ class SpriteInfo(TypedDict):
 
 
 class GroupInfo(TypedDict):
+    """Serialized sprite group summary.
+
+    Attributes
+    ----------
+    count : int
+        Total number of active sprites in the group.
+    sprites : list[SpriteInfo]
+        Sampled sprite state entries within the group.
+    """
+
     count: int
     sprites: list[SpriteInfo]
 
 
 __all__ = ["log_event", "log_state"]
 
-_FPS = 60
-_MAX_SECONDS = 16
-_SPRITE_SAMPLE_LIMIT = 10  # Maximum number of sprites to log per group
+_FPS: int = 60
+_MAX_SECONDS: int = 16
+_SPRITE_SAMPLE_LIMIT: int = 10  # Maximum number of sprites to log per group
 
-_frame_count = 0
-_state_log_initialized = False
-_event_log_initialized = False
-_start_time = datetime.now(tz=UTC)
+_frame_count: int = 0
+_state_log_initialized: bool = False
+_event_log_initialized: bool = False
+_start_time: datetime = datetime.now(tz=UTC)
 
 
 def log_state() -> None:
+    """Capture and record periodic game state snapshots to ``game_state.jsonl``."""
     global _frame_count, _state_log_initialized
 
     # Stop logging after `_MAX_SECONDS` seconds
@@ -134,6 +165,15 @@ def log_state() -> None:
 
 
 def log_event(event_type: str, **details: object) -> None:
+    """Record a structured game event to ``game_events.jsonl``.
+
+    Parameters
+    ----------
+    event_type : str
+        Identifier describing the type of event (e.g. ``player_hit``, ``asteroid_shot``).
+    **details : object
+        Arbitrary key-value pairs providing additional context for the event.
+    """
     global _event_log_initialized
 
     now = datetime.now(tz=UTC)

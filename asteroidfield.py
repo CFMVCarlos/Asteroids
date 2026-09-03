@@ -1,3 +1,7 @@
+"""Asteroid field spawner module."""
+
+from __future__ import annotations
+
 import random
 from collections.abc import Callable
 from typing import ClassVar
@@ -5,13 +9,30 @@ from typing import ClassVar
 import pygame
 
 from asteroid import Asteroid
-from constants import *
+from constants import (
+    ASTEROID_KINDS,
+    ASTEROID_MAX_RADIUS,
+    ASTEROID_MIN_RADIUS,
+    ASTEROID_SPAWN_RATE_SECONDS,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
 
 Edge = tuple[pygame.Vector2, Callable[[float], pygame.Vector2]]
 
 
 class AsteroidField(pygame.sprite.Sprite):
-    containers: tuple[pygame.sprite.Group, ...]
+    """Spawns asteroids procedurally along the screen boundaries.
+
+    Attributes
+    ----------
+    containers : ClassVar[tuple[pygame.sprite.Group, ...]]
+        Sprite groups to which instances of this class are automatically added.
+    edges : ClassVar[list[Edge]]
+        List of boundary spawn vectors and position mapping functions.
+    """
+
+    containers: ClassVar[tuple[pygame.sprite.Group, ...]]
 
     edges: ClassVar[list[Edge]] = [
         (
@@ -38,24 +59,42 @@ class AsteroidField(pygame.sprite.Sprite):
 
     def __init__(self) -> None:
         pygame.sprite.Sprite.__init__(self, *self.containers)
-        self.spawn_timer = 0.0
+        self.spawn_timer: float = 0.0
 
     def spawn(
         self, radius: float, position: pygame.Vector2, velocity: pygame.Vector2
     ) -> None:
+        """Instantiate and initialize an asteroid at a designated location.
+
+        Parameters
+        ----------
+        radius : float
+            Radius of the spawned asteroid.
+        position : pygame.Vector2
+            Initial 2D spawn coordinates.
+        velocity : pygame.Vector2
+            Initial 2D velocity vector.
+        """
         asteroid = Asteroid(position.x, position.y, radius)
         asteroid.velocity = velocity
 
     def update(self, dt: float) -> None:
+        """Accumulate elapsed time and spawn asteroids at periodic intervals.
+
+        Parameters
+        ----------
+        dt : float
+            Delta time in seconds since the last frame update.
+        """
         self.spawn_timer += dt
         if self.spawn_timer > ASTEROID_SPAWN_RATE_SECONDS:
-            self.spawn_timer = 0
+            self.spawn_timer = 0.0
 
             # spawn a new asteroid at a random edge
             edge = random.choice(self.edges)
-            speed = random.randint(40, 100)
-            velocity = edge[0] * speed
+            speed: float = float(random.randint(40, 100))
+            velocity: pygame.Vector2 = edge[0] * speed
             velocity = velocity.rotate(random.randint(-30, 30))
-            position = edge[1](random.uniform(0, 1))
-            kind = random.randint(1, ASTEROID_KINDS)
+            position: pygame.Vector2 = edge[1](random.uniform(0, 1))
+            kind: int = random.randint(1, ASTEROID_KINDS)
             self.spawn(ASTEROID_MIN_RADIUS * kind, position, velocity)

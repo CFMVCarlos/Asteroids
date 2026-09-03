@@ -1,3 +1,7 @@
+"""Main entrypoint for the Asteroids game."""
+
+from __future__ import annotations
+
 import sys
 
 import pygame
@@ -10,7 +14,8 @@ from player import Player
 from shot import Shot
 
 
-def main():
+def main() -> None:
+    """Initialize Pygame, configure game groups and entities, and run the main loop."""
     print(f"Starting Asteroids with pygame version: {pygame.version.ver}")
     print(f"Screen width: {SCREEN_WIDTH}")
     print(f"Screen height: {SCREEN_HEIGHT}")
