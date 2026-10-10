@@ -8,6 +8,7 @@ from constants import (
     LINE_WIDTH,
     PLAYER_ACCELERATION,
     PLAYER_DRAG,
+    PLAYER_HYPERSPACE_COOLDOWN_SECONDS,
     PLAYER_INVULNERABLE_DURATION_SECONDS,
     PLAYER_MAX_SPEED,
     PLAYER_RADIUS,
@@ -65,6 +66,9 @@ class Player(CircleShape):
         self.invulnerable_timer: float = 0.0
         self.flash_timer: float = 0.0
 
+        # Hyperspace Leap Jump (Option C)
+        self.hyperspace_cooldown: float = 0.0
+
         # Skill Buff Timers
         self.triple_shot_timer: float = 0.0
         self.rapid_fire_timer: float = 0.0
@@ -73,6 +77,23 @@ class Player(CircleShape):
         self.slow_time_timer: float = 0.0
         self.score_multiplier_timer: float = 0.0
         self.magnet_timer: float = 0.0
+
+    def trigger_hyperspace(self) -> bool:
+        """Trigger an emergency hyperspace leap to a random screen coordinate."""
+        if self.hyperspace_cooldown > 0.0:
+            return False
+
+        # Reset velocity to 0 and teleport randomly
+        padding = 100
+        self.position.x = random.uniform(padding, SCREEN_WIDTH - padding)
+        self.position.y = random.uniform(padding, SCREEN_HEIGHT - padding)
+        self.velocity = pygame.Vector2(0, 0)
+        self.hyperspace_cooldown = PLAYER_HYPERSPACE_COOLDOWN_SECONDS
+
+        # Brief 1.5s invulnerability so you don't land right on an asteroid and die
+        self.invulnerable_timer = max(self.invulnerable_timer, 1.5)
+        self.flash_timer = 0.0
+        return True
 
     def activate_powerup(self, kind: str) -> None:
         """Activate a skill buff for its designated duration, capped at its maximum limit."""
@@ -342,14 +363,18 @@ class Player(CircleShape):
             )
 
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            # Retro-thrusters / gentle brake
-            self.velocity -= forward * (PLAYER_ACCELERATION * 0.5 * dt)
+            # Emergency hyperspace leap with 20s cooldown (Option C)
+            self.trigger_hyperspace()
 
         # Shooting
         if keys[pygame.K_SPACE]:
             self.shoot()
 
         self.cooldown_timer -= dt
+
+        # Update hyperspace jump cooldown
+        if self.hyperspace_cooldown > 0.0:
+            self.hyperspace_cooldown = max(0.0, self.hyperspace_cooldown - dt)
 
         # Update skill buff timers
         if self.triple_shot_timer > 0.0:

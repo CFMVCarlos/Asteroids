@@ -14,6 +14,7 @@ from constants import (
     ASTEROID_MAX_RADIUS,
     ASTEROID_MIN_RADIUS,
     ASTEROID_SPAWN_RATE_SECONDS,
+    MAX_ACTIVE_ASTEROIDS,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     SPECIAL_ASTEROID_CHANCE,
@@ -24,6 +25,11 @@ Edge = tuple[pygame.Vector2, Callable[[float], pygame.Vector2]]
 
 class AsteroidField(pygame.sprite.Sprite):
     """Spawns asteroids procedurally along the screen boundaries.
+
+    Parameters
+    ----------
+    asteroids_group : pygame.sprite.Group | None
+        Reference to the active asteroids group to enforce the spawn cap.
 
     Attributes
     ----------
@@ -58,9 +64,10 @@ class AsteroidField(pygame.sprite.Sprite):
         ),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, asteroids_group: pygame.sprite.Group | None = None) -> None:
         pygame.sprite.Sprite.__init__(self, *self.containers)
         self.spawn_timer: float = 0.0
+        self.asteroids_group: pygame.sprite.Group | None = asteroids_group
 
     def spawn(
         self,
@@ -86,7 +93,7 @@ class AsteroidField(pygame.sprite.Sprite):
         asteroid.velocity = velocity
 
     def update(self, dt: float) -> None:
-        """Accumulate elapsed time and spawn asteroids at periodic intervals.
+        """Accumulate elapsed time and spawn asteroids at periodic intervals if below cap.
 
         Parameters
         ----------
@@ -97,6 +104,13 @@ class AsteroidField(pygame.sprite.Sprite):
         if self.spawn_timer > ASTEROID_SPAWN_RATE_SECONDS:
             self.spawn_timer = 0.0
 
+            # Only spawn new wave asteroids if current count is below cap
+            if (
+                self.asteroids_group is not None
+                and len(self.asteroids_group) >= MAX_ACTIVE_ASTEROIDS
+            ):
+                return
+
             # spawn a new asteroid at a random edge
             edge = random.choice(self.edges)
             speed: float = float(random.randint(40, 100))
@@ -105,7 +119,7 @@ class AsteroidField(pygame.sprite.Sprite):
             position: pygame.Vector2 = edge[1](random.uniform(0, 1))
             kind: int = random.randint(1, ASTEROID_KINDS)
 
-            # Only biggest asteroids (kind == ASTEROID_KINDS) can be special (5% chance)
+            # Only biggest asteroids (kind == ASTEROID_KINDS) can be special (15% chance)
             is_special = (kind == ASTEROID_KINDS) and (
                 random.random() < SPECIAL_ASTEROID_CHANCE
             )

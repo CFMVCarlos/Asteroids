@@ -72,7 +72,7 @@ class Game:
         Shot.asteroid_target_group = self.asteroids
 
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-        self.asteroid_field = AsteroidField()
+        self.asteroid_field = AsteroidField(asteroids_group=self.asteroids)
         self.score = 0
         self.lives = PLAYER_MAX_LIVES
         self.score_saved = False
@@ -461,6 +461,14 @@ class Game:
             active_badges.append(
                 (f"MAGNET {self.player.magnet_timer:.1f}s", (255, 120, 200))
             )
+
+        # Hyperspace Leap HUD badge
+        if self.player.hyperspace_cooldown > 0.0:
+            active_badges.append(
+                (f"HYPERSPACE {self.player.hyperspace_cooldown:.1f}s", (140, 145, 160))
+            )
+        else:
+            active_badges.append(("HYPERSPACE READY [S]", (100, 220, 255)))
 
         for text, color in active_badges:
             badge_surf = self.badge_font.render(text, True, color)
