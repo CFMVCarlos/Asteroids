@@ -11,7 +11,27 @@ import pygame
 from circleshape import CircleShape
 from constants import LINE_WIDTH, POWERUP_LIFETIME_SECONDS, POWERUP_RADIUS
 
-PowerUpType = Literal["TRIPLE_SHOT", "RAPID_FIRE", "INVINCIBILITY"]
+PowerUpType = Literal[
+    "TRIPLE_SHOT",
+    "RAPID_FIRE",
+    "INVINCIBILITY",
+    "EMP_BOMB",
+    "HOMING_MISSILES",
+    "SLOW_TIME",
+    "SCORE_MULTIPLIER",
+    "MAGNET",
+]
+
+ALL_POWERUP_TYPES: list[PowerUpType] = [
+    "TRIPLE_SHOT",
+    "RAPID_FIRE",
+    "INVINCIBILITY",
+    "EMP_BOMB",
+    "HOMING_MISSILES",
+    "SLOW_TIME",
+    "SCORE_MULTIPLIER",
+    "MAGNET",
+]
 
 
 class PowerUp(CircleShape):
@@ -23,7 +43,7 @@ class PowerUp(CircleShape):
         Initial horizontal position on the screen.
     y : float
         Initial vertical position on the screen.
-    kind : PowerUpType
+    kind : PowerUpType | None
         The specific skill grant awarded when collected.
 
     Attributes
@@ -37,9 +57,7 @@ class PowerUp(CircleShape):
     def __init__(self, x: float, y: float, kind: PowerUpType | None = None) -> None:
         super().__init__(x, y, POWERUP_RADIUS)
         if kind is None:
-            self.kind: PowerUpType = random.choice(
-                ["TRIPLE_SHOT", "RAPID_FIRE", "INVINCIBILITY"]
-            )
+            self.kind: PowerUpType = random.choice(ALL_POWERUP_TYPES)
         else:
             self.kind = kind
 
@@ -81,20 +99,41 @@ class PowerUp(CircleShape):
         glow_rad = int(self.radius + 3 + pulse * 4)
 
         if self.kind == "TRIPLE_SHOT":
-            # Emerald green / Cyan
             core_color = (0, 240, 160)
             glow_color = (0, 120, 80)
             label = "3X"
         elif self.kind == "RAPID_FIRE":
-            # Electric amber / Gold
             core_color = (255, 200, 40)
             glow_color = (140, 100, 20)
             label = "RF"
-        else:
-            # Celestial violet / Magenta for Invincibility
+        elif self.kind == "INVINCIBILITY":
             core_color = (220, 80, 255)
             glow_color = (110, 40, 140)
             label = "★"
+        elif self.kind == "EMP_BOMB":
+            core_color = (255, 60, 60)
+            glow_color = (160, 20, 20)
+            label = "EMP"
+        elif self.kind == "HOMING_MISSILES":
+            core_color = (80, 200, 255)
+            glow_color = (20, 90, 150)
+            label = "HM"
+        elif self.kind == "SLOW_TIME":
+            core_color = (120, 240, 255)
+            glow_color = (30, 110, 140)
+            label = "SLOW"
+        elif self.kind == "SCORE_MULTIPLIER":
+            core_color = (255, 220, 90)
+            glow_color = (160, 130, 20)
+            label = "2X"
+        elif self.kind == "MAGNET":
+            core_color = (255, 120, 200)
+            glow_color = (140, 40, 90)
+            label = "MAG"
+        else:
+            core_color = (255, 255, 255)
+            glow_color = (100, 100, 100)
+            label = "?"
 
         # Outer energy halo
         pygame.draw.circle(
@@ -121,7 +160,7 @@ class PowerUp(CircleShape):
         )
 
         # Center indicator glyph
-        font = pygame.font.SysFont(None, 20, bold=True)
+        font = pygame.font.SysFont(None, 18, bold=True)
         text_surf = font.render(label, True, core_color)
         text_rect = text_surf.get_rect(
             center=(int(self.position.x), int(self.position.y))

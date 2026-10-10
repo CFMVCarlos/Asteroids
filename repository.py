@@ -48,7 +48,7 @@ class HighScoreRepository:
     def save_score(self, score: int, player_name: str = "PILOT") -> None:
         """Save a new high score with player name to the database."""
         cursor = self.conn.cursor()
-        sanitized_name = player_name.strip()[:10] if player_name.strip() else "PILOT"
+        sanitized_name = player_name.strip()[:18] if player_name.strip() else "PILOT"
         cursor.execute(
             "INSERT INTO high_scores (player_name, score) VALUES (?, ?)",
             (sanitized_name, score),

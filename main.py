@@ -35,9 +35,11 @@ class Game:
         self.state = "MENU"  # MENU, PLAYING, GAMEOVER
         self.score = 0
         self.lives = PLAYER_MAX_LIVES
-        self.player_name = "PILOT"
+        self.player_name = "CARLOS VOLINS"
+        self.name_editing = True
         self.score_saved = False
         self.cursor_timer = 0.0
+        self.emp_flash_timer = 0.0
         self.high_scores = self.repo.get_top_scores(5)
         self.init_game_objects()
 
@@ -55,11 +57,15 @@ class Game:
         Shot.containers = (self.shots, self.updatable, self.drawable)
         PowerUp.containers = (self.powerups, self.updatable, self.drawable)
 
+        # Wire asteroid tracking into Shot for homing missiles
+        Shot.asteroid_target_group = self.asteroids
+
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.asteroid_field = AsteroidField()
         self.score = 0
         self.lives = PLAYER_MAX_LIVES
         self.score_saved = False
+        self.emp_flash_timer = 0.0
 
     def draw_text(
         self,
@@ -79,6 +85,20 @@ class Game:
             rect.topleft = (int(x), int(y))
         self.screen.blit(surface, rect)
 
+    def trigger_emp_bomb(self) -> None:
+        """Detonate screen-clearing EMP bomb."""
+        self.emp_flash_timer = 0.25
+        # Damage / destroy all asteroids currently in play
+        asteroids_to_nuke = list(self.asteroids)
+        for asteroid in asteroids_to_nuke:
+            was_special = asteroid.is_special
+            split_or_destroyed = asteroid.split()
+            if split_or_destroyed:
+                multiplier = 2 if self.player.score_multiplier_timer > 0.0 else 1
+                self.score += (50 if was_special else 10) * multiplier
+                if was_special:
+                    PowerUp(asteroid.position.x, asteroid.position.y)
+
     def run(self) -> None:
         """Execute the main game loop."""
         dt: float = 0.0
@@ -90,36 +110,29 @@ class Game:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.quit()
-                    elif self.state == "MENU" and event.key == pygame.K_SPACE:
-                        self.state = "PLAYING"
-                        self.init_game_objects()
-                    elif self.state == "GAMEOVER":
+                    elif self.state == "MENU":
                         if event.key == pygame.K_RETURN:
-                            # Save score with custom name if not yet saved
-                            if not self.score_saved:
-                                name_to_save = self.player_name.strip() or "PILOT"
-                                self.repo.save_score(self.score, name_to_save)
-                                self.high_scores = self.repo.get_top_scores(5)
-                                self.score_saved = True
-                        elif event.key == pygame.K_r:
-                            # Auto-save score on restart if uncommitted
-                            if not self.score_saved:
-                                name_to_save = self.player_name.strip() or "PILOT"
-                                self.repo.save_score(self.score, name_to_save)
-                                self.high_scores = self.repo.get_top_scores(5)
-                                self.score_saved = True
+                            # Start game with current pilot name
                             self.state = "PLAYING"
                             self.init_game_objects()
                         elif event.key == pygame.K_BACKSPACE:
-                            if not self.score_saved and len(self.player_name) > 0:
+                            if len(self.player_name) > 0:
                                 self.player_name = self.player_name[:-1]
-                        elif not self.score_saved and event.unicode:
-                            # Allow alphanumeric and dash/underscore characters up to 10 chars
+                        elif event.unicode:
                             char = event.unicode.upper()
-                            if (char.isalnum() or char in "-_ ") and len(
+                            # Allow alphanumeric, space, dash, underscore up to 18 characters
+                            if (char.isalnum() or char in " -_") and len(
                                 self.player_name
-                            ) < 10:
+                            ) < 18:
                                 self.player_name += char
+
+                    elif self.state == "GAMEOVER" and event.key in (
+                        pygame.K_RETURN,
+                        pygame.K_r,
+                    ):
+                        # Replay game with saved pilot name
+                        self.state = "PLAYING"
+                        self.init_game_objects()
 
             self.screen.fill("black")
 
@@ -136,26 +149,54 @@ class Game:
             pygame.display.flip()
 
     def _run_menu(self) -> None:
-        """Render the main menu."""
+        """Render the main menu with dedicated pilot name input."""
         self.draw_text(
             "ASTEROIDS",
             self.large_font,
             "white",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 3.8,
-            center=True,
-        )
-        self.draw_text(
-            "Press SPACE to Start",
-            self.font,
-            "gray",
-            SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 2.5,
+            SCREEN_HEIGHT * 0.16,
             center=True,
         )
 
-        # Draw scoreboard
-        y_offset = SCREEN_HEIGHT * 0.48
+        # Pilot Name Input Box
+        box_y = SCREEN_HEIGHT * 0.28
+        self.draw_text(
+            "PILOT CALLSIGN (Type name, press ENTER to launch):",
+            self.badge_font,
+            (255, 215, 0),
+            SCREEN_WIDTH / 2,
+            box_y,
+            center=True,
+        )
+
+        cursor = "_" if int(self.cursor_timer * 3) % 2 == 0 else ""
+        display_name = f"{self.player_name}{cursor}"
+        box_rect = pygame.Rect(0, 0, 380, 46)
+        box_rect.center = (int(SCREEN_WIDTH / 2), int(box_y + 40))
+        pygame.draw.rect(self.screen, (25, 30, 45), box_rect, border_radius=8)
+        pygame.draw.rect(self.screen, (0, 240, 160), box_rect, width=2, border_radius=8)
+
+        self.draw_text(
+            display_name,
+            self.font,
+            "white",
+            SCREEN_WIDTH / 2,
+            box_y + 40,
+            center=True,
+        )
+
+        self.draw_text(
+            "Press ENTER to Start Game  |  ESC to Quit",
+            self.font,
+            "gray",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT * 0.44,
+            center=True,
+        )
+
+        # Scoreboard
+        y_offset = SCREEN_HEIGHT * 0.52
         self.draw_text(
             "TOP PILOTS SCOREBOARD",
             self.font,
@@ -166,8 +207,8 @@ class Game:
         )
         y_offset += 15
         for i, score_record in enumerate(self.high_scores):
-            y_offset += 38
-            player_tag = score_record["player_name"].ljust(10)
+            y_offset += 36
+            player_tag = score_record["player_name"].ljust(18)
             score_tag = str(score_record["score"]).rjust(6)
             self.draw_text(
                 f"{i + 1}.  {player_tag}   {score_tag} PTS",
@@ -199,10 +240,16 @@ class Game:
                 # Active red heart
                 color = (255, 50, 70)
                 pygame.draw.circle(
-                    self.screen, color, (int(hx - size * 0.5), int(hy)), int(size * 0.5)
+                    self.screen,
+                    color,
+                    (int(hx - size * 0.5), int(hy)),
+                    int(size * 0.5),
                 )
                 pygame.draw.circle(
-                    self.screen, color, (int(hx + size * 0.5), int(hy)), int(size * 0.5)
+                    self.screen,
+                    color,
+                    (int(hx + size * 0.5), int(hy)),
+                    int(size * 0.5),
                 )
                 triangle_pts = [
                     (hx - size * 1.0, hy + size * 0.1),
@@ -237,7 +284,24 @@ class Game:
     def _run_playing(self, dt: float) -> None:
         """Update and render the active game state."""
         log_state()
-        self.updatable.update(dt)
+
+        # Handle time dilation slow-motion buff
+        sim_dt = dt * 0.5 if self.player.slow_time_timer > 0.0 else dt
+
+        # Update entities (Player runs on normal dt, world obstacles obey sim_dt)
+        self.player.update(dt)
+        for entity in self.updatable:
+            if entity != self.player:
+                entity.update(sim_dt)
+
+        # Handle Magnet skill (attract power-ups towards player)
+        if self.player.magnet_timer > 0.0:
+            for powerup in self.powerups:
+                diff = self.player.position - powerup.position
+                dist = diff.length()
+                if 0 < dist < 450:
+                    attract_speed = 320.0
+                    powerup.velocity = diff.normalize() * attract_speed
 
         # Cull out of bounds shots to prevent memory leaks
         for shot in self.shots:
@@ -271,6 +335,11 @@ class Game:
 
                 if self.lives <= 0:
                     self.score_saved = False
+                    # Auto-save score with chosen pilot name
+                    name_to_save = self.player_name.strip() or "PILOT"
+                    self.repo.save_score(self.score, name_to_save)
+                    self.high_scores = self.repo.get_top_scores(5)
+                    self.score_saved = True
                     self.state = "GAMEOVER"
                     break
 
@@ -280,33 +349,51 @@ class Game:
                     shot.kill()
                     was_special = asteroid.is_special
                     split_or_destroyed = asteroid.split()
+                    multiplier = 2 if self.player.score_multiplier_timer > 0.0 else 1
                     if split_or_destroyed:
-                        self.score += 50 if was_special else 10
+                        self.score += (50 if was_special else 10) * multiplier
                         if was_special:
                             # Drop a random power-up collectible
                             PowerUp(asteroid.position.x, asteroid.position.y)
                     else:
                         # Non-fatal hit on special asteroid (progress HP)
-                        self.score += 5
+                        self.score += 5 * multiplier
 
         # Check player collision with powerups
         for powerup in self.powerups:
             if self.player.collides_with(powerup):
                 log_event("powerup_collected")
-                self.player.activate_powerup(powerup.kind)
+                if powerup.kind == "EMP_BOMB":
+                    self.trigger_emp_bomb()
+                else:
+                    self.player.activate_powerup(powerup.kind)
                 powerup.kill()
+
+        # EMP screen shockwave effect
+        if self.emp_flash_timer > 0.0:
+            self.emp_flash_timer -= dt
+            flash_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            flash_surf.fill((255, 80, 80))
+            flash_surf.set_alpha(int(150 * (self.emp_flash_timer / 0.25)))
+            self.screen.blit(flash_surf, (0, 0))
 
         for draw in self.drawable:
             draw.draw(self.screen)
 
         # HUD: Score and Lives
-        self.draw_text(f"Score: {self.score}", self.font, "white", 20, 20)
+        multiplier_tag = (
+            " (2X PTS!)" if self.player.score_multiplier_timer > 0.0 else ""
+        )
+        self.draw_text(
+            f"Score: {self.score}{multiplier_tag}", self.font, "white", 20, 20
+        )
         self.draw_hearts(SCREEN_WIDTH - 140, 26, size=11.0)
 
         # HUD: Active Skill Countdown Badges
         badge_x = 20
         badge_y = 60
-        active_badges = []
+        active_badges: list[tuple[str, tuple[int, int, int]]] = []
+
         if self.player.triple_shot_timer > 0.0:
             active_badges.append(
                 (f"TRIPLE SHOT {self.player.triple_shot_timer:.1f}s", (0, 240, 160))
@@ -322,10 +409,28 @@ class Game:
                     (220, 80, 255),
                 )
             )
+        if self.player.homing_missiles_timer > 0.0:
+            active_badges.append(
+                (
+                    f"HOMING MISSILES {self.player.homing_missiles_timer:.1f}s",
+                    (80, 200, 255),
+                )
+            )
+        if self.player.slow_time_timer > 0.0:
+            active_badges.append(
+                (f"SLOW TIME {self.player.slow_time_timer:.1f}s", (120, 240, 255))
+            )
+        if self.player.score_multiplier_timer > 0.0:
+            active_badges.append(
+                (f"2X SCORE {self.player.score_multiplier_timer:.1f}s", (255, 220, 90))
+            )
+        if self.player.magnet_timer > 0.0:
+            active_badges.append(
+                (f"MAGNET {self.player.magnet_timer:.1f}s", (255, 120, 200))
+            )
 
         for text, color in active_badges:
             badge_surf = self.badge_font.render(text, True, color)
-            # Semi-transparent dark pill background
             bg_rect = badge_surf.get_rect(topleft=(badge_x, badge_y))
             pill_rect = bg_rect.inflate(14, 6)
             pygame.draw.rect(self.screen, (20, 25, 35), pill_rect, border_radius=6)
@@ -334,7 +439,7 @@ class Game:
             badge_y += 32
 
     def _run_gameover(self) -> None:
-        """Render the game over screen with interactive pilot name entry and high scores."""
+        """Render the game over screen."""
         self.draw_text(
             "GAME OVER",
             self.large_font,
@@ -348,58 +453,34 @@ class Game:
             self.font,
             "white",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 2.9,
+            SCREEN_HEIGHT / 3.0,
             center=True,
         )
 
-        # Pilot Name Input Area
-        cursor = (
-            "_" if int(self.cursor_timer * 3) % 2 == 0 and not self.score_saved else ""
+        self.draw_text(
+            f"Pilot: {self.player_name}",
+            self.font,
+            (255, 215, 0),
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT * 0.44,
+            center=True,
         )
-        display_name = f"{self.player_name}{cursor}"
-        box_y = SCREEN_HEIGHT * 0.44
-
-        if not self.score_saved:
-            self.draw_text(
-                "Enter Pilot Name & Press ENTER to Save:",
-                self.font,
-                (255, 215, 0),
-                SCREEN_WIDTH / 2,
-                box_y,
-                center=True,
-            )
-            # Input Box rectangle
-            box_rect = pygame.Rect(0, 0, 280, 48)
-            box_rect.center = (int(SCREEN_WIDTH / 2), int(box_y + 45))
-            pygame.draw.rect(self.screen, (30, 35, 50), box_rect, border_radius=8)
-            pygame.draw.rect(
-                self.screen, (100, 150, 255), box_rect, width=2, border_radius=8
-            )
-
-            self.draw_text(
-                display_name,
-                self.font,
-                "white",
-                SCREEN_WIDTH / 2,
-                box_y + 45,
-                center=True,
-            )
-        else:
-            self.draw_text(
-                f"Score Saved for Pilot: {self.player_name}!",
-                self.font,
-                (100, 255, 120),
-                SCREEN_WIDTH / 2,
-                box_y + 25,
-                center=True,
-            )
 
         self.draw_text(
-            "Press 'R' to Play Again  |  ESC to Quit",
-            self.font,
-            "gray",
+            "Score successfully recorded to Leaderboard!",
+            self.badge_font,
+            (100, 255, 120),
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT * 0.72,
+            SCREEN_HEIGHT * 0.52,
+            center=True,
+        )
+
+        self.draw_text(
+            "Press 'ENTER' or 'R' to Play Again  |  ESC to Quit",
+            self.font,
+            "white",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT * 0.68,
             center=True,
         )
 

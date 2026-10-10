@@ -14,8 +14,12 @@ from constants import (
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOOT_SPEED,
     PLAYER_TURN_SPEED,
+    POWERUP_HOMING_MISSILES_DURATION,
     POWERUP_INVINCIBILITY_DURATION,
+    POWERUP_MAGNET_DURATION,
     POWERUP_RAPID_FIRE_DURATION,
+    POWERUP_SCORE_MULTIPLIER_DURATION,
+    POWERUP_SLOW_TIME_DURATION,
     POWERUP_TRIPLE_SHOT_DURATION,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -65,15 +69,48 @@ class Player(CircleShape):
         self.triple_shot_timer: float = 0.0
         self.rapid_fire_timer: float = 0.0
         self.invincible_skill_timer: float = 0.0
+        self.homing_missiles_timer: float = 0.0
+        self.slow_time_timer: float = 0.0
+        self.score_multiplier_timer: float = 0.0
+        self.magnet_timer: float = 0.0
 
     def activate_powerup(self, kind: str) -> None:
-        """Activate a skill buff for its designated duration."""
+        """Activate a skill buff for its designated duration, capped at its maximum limit."""
         if kind == "TRIPLE_SHOT":
-            self.triple_shot_timer = POWERUP_TRIPLE_SHOT_DURATION
+            self.triple_shot_timer = min(
+                POWERUP_TRIPLE_SHOT_DURATION,
+                self.triple_shot_timer + POWERUP_TRIPLE_SHOT_DURATION,
+            )
         elif kind == "RAPID_FIRE":
-            self.rapid_fire_timer = POWERUP_RAPID_FIRE_DURATION
+            self.rapid_fire_timer = min(
+                POWERUP_RAPID_FIRE_DURATION,
+                self.rapid_fire_timer + POWERUP_RAPID_FIRE_DURATION,
+            )
         elif kind == "INVINCIBILITY":
-            self.invincible_skill_timer = POWERUP_INVINCIBILITY_DURATION
+            self.invincible_skill_timer = min(
+                POWERUP_INVINCIBILITY_DURATION,
+                self.invincible_skill_timer + POWERUP_INVINCIBILITY_DURATION,
+            )
+        elif kind == "HOMING_MISSILES":
+            self.homing_missiles_timer = min(
+                POWERUP_HOMING_MISSILES_DURATION,
+                self.homing_missiles_timer + POWERUP_HOMING_MISSILES_DURATION,
+            )
+        elif kind == "SLOW_TIME":
+            self.slow_time_timer = min(
+                POWERUP_SLOW_TIME_DURATION,
+                self.slow_time_timer + POWERUP_SLOW_TIME_DURATION,
+            )
+        elif kind == "SCORE_MULTIPLIER":
+            self.score_multiplier_timer = min(
+                POWERUP_SCORE_MULTIPLIER_DURATION,
+                self.score_multiplier_timer + POWERUP_SCORE_MULTIPLIER_DURATION,
+            )
+        elif kind == "MAGNET":
+            self.magnet_timer = min(
+                POWERUP_MAGNET_DURATION,
+                self.magnet_timer + POWERUP_MAGNET_DURATION,
+            )
 
     def trigger_hit(self) -> None:
         """Trigger temporary invulnerability and flashing animation after taking damage."""
@@ -321,6 +358,14 @@ class Player(CircleShape):
             self.rapid_fire_timer = max(0.0, self.rapid_fire_timer - dt)
         if self.invincible_skill_timer > 0.0:
             self.invincible_skill_timer = max(0.0, self.invincible_skill_timer - dt)
+        if self.homing_missiles_timer > 0.0:
+            self.homing_missiles_timer = max(0.0, self.homing_missiles_timer - dt)
+        if self.slow_time_timer > 0.0:
+            self.slow_time_timer = max(0.0, self.slow_time_timer - dt)
+        if self.score_multiplier_timer > 0.0:
+            self.score_multiplier_timer = max(0.0, self.score_multiplier_timer - dt)
+        if self.magnet_timer > 0.0:
+            self.magnet_timer = max(0.0, self.magnet_timer - dt)
 
         # Update invulnerability flash timers
         if self.invulnerable_timer > 0.0:
@@ -359,7 +404,7 @@ class Player(CircleShape):
         self.exhaust_particles = active_particles
 
     def shoot(self) -> None:
-        """Spawn laser projectiles moving forward (or triple-spread if buff active) if off cooldown."""
+        """Spawn laser projectiles moving forward (or triple-spread/homing if buff active) if off cooldown."""
         if self.cooldown_timer > 0:
             return
 
@@ -371,14 +416,16 @@ class Player(CircleShape):
         )
         self.cooldown_timer = base_cooldown
 
+        is_homing = self.homing_missiles_timer > 0.0
+
         if self.triple_shot_timer > 0.0:
             # 3 shots: straight (0°), 45° to the right, and 45° to the left
             angles = [self.rotation, self.rotation + 45.0, self.rotation - 45.0]
             for angle in angles:
-                shot = Shot(self.position.x, self.position.y)
+                shot = Shot(self.position.x, self.position.y, is_homing=is_homing)
                 shot.velocity = pygame.Vector2(0, 1).rotate(angle) * PLAYER_SHOOT_SPEED
         else:
-            shot = Shot(self.position.x, self.position.y)
+            shot = Shot(self.position.x, self.position.y, is_homing=is_homing)
             shot.velocity = (
                 pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
             )
