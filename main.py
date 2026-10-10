@@ -35,7 +35,7 @@ class Game:
         self.state = "MENU"  # MENU, PLAYING, GAMEOVER
         self.score = 0
         self.lives = PLAYER_MAX_LIVES
-        self.player_name = "CARLOS VOLINS"
+        self.player_name = "Player"
         self.name_editing = True
         self.score_saved = False
         self.cursor_timer = 0.0
@@ -336,7 +336,7 @@ class Game:
                 if self.lives <= 0:
                     self.score_saved = False
                     # Auto-save score with chosen pilot name
-                    name_to_save = self.player_name.strip() or "PILOT"
+                    name_to_save = self.player_name.strip() or "Player"
                     self.repo.save_score(self.score, name_to_save)
                     self.high_scores = self.repo.get_top_scores(5)
                     self.score_saved = True
