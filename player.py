@@ -8,6 +8,7 @@ from constants import (
     LINE_WIDTH,
     PLAYER_ACCELERATION,
     PLAYER_DRAG,
+    PLAYER_INVULNERABLE_DURATION_SECONDS,
     PLAYER_MAX_SPEED,
     PLAYER_RADIUS,
     PLAYER_SHOOT_COOLDOWN_SECONDS,
@@ -30,7 +31,7 @@ class ExhaustParticle(TypedDict):
 
 
 class Player(CircleShape):
-    """Controllable player rocket ship entity with inertia and thrust animation.
+    """Controllable player rocket ship entity with inertia, lives, and damage flash.
 
     Parameters
     ----------
@@ -54,6 +55,18 @@ class Player(CircleShape):
         self.is_boosting: bool = False
         self.flame_flicker: float = 0.0
         self.exhaust_particles: list[ExhaustParticle] = []
+        self.invulnerable_timer: float = 0.0
+        self.flash_timer: float = 0.0
+
+    def trigger_hit(self) -> None:
+        """Trigger temporary invulnerability and flashing animation after taking damage."""
+        self.invulnerable_timer = PLAYER_INVULNERABLE_DURATION_SECONDS
+        self.flash_timer = 0.0
+
+    @property
+    def is_invulnerable(self) -> bool:
+        """Check whether the ship is currently invulnerable."""
+        return self.invulnerable_timer > 0.0
 
     def get_rocket_points(self) -> dict[str, list[pygame.Vector2]]:
         """Compute coordinates for the fuselage, wings, cockpit, and engine bell.
@@ -111,6 +124,10 @@ class Player(CircleShape):
         screen : pygame.Surface
             Target Pygame surface to render the entity onto.
         """
+        # When damaged and invulnerable, flash/blink at 10Hz
+        if self.invulnerable_timer > 0.0 and int(self.flash_timer * 12) % 2 == 1:
+            return
+
         # Render lingering exhaust smoke/spark particles
         for p in self.exhaust_particles:
             pos = p["pos"]
@@ -227,6 +244,11 @@ class Player(CircleShape):
             self.shoot()
 
         self.cooldown_timer -= dt
+
+        # Update invulnerability flash timers
+        if self.invulnerable_timer > 0.0:
+            self.invulnerable_timer = max(0.0, self.invulnerable_timer - dt)
+            self.flash_timer += dt
 
         # Apply ice-like drift / inertia & low drag
         # Exponential drag formula: vel * (drag ^ (dt * 60))

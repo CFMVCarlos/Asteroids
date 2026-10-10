@@ -8,7 +8,7 @@ import pygame
 
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
-from constants import SCREEN_HEIGHT, SCREEN_WIDTH
+from constants import PLAYER_MAX_LIVES, SCREEN_HEIGHT, SCREEN_WIDTH
 from logger import log_event, log_state
 from player import Player
 from repository import HighScoreRepository
@@ -32,6 +32,7 @@ class Game:
 
         self.state = "MENU"  # MENU, PLAYING, GAMEOVER
         self.score = 0
+        self.lives = PLAYER_MAX_LIVES
         self.high_scores = self.repo.get_top_scores(3)
         self.init_game_objects()
 
@@ -50,6 +51,7 @@ class Game:
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.asteroid_field = AsteroidField()
         self.score = 0
+        self.lives = PLAYER_MAX_LIVES
 
     def draw_text(
         self,
@@ -135,6 +137,46 @@ class Game:
                 center=True,
             )
 
+    def draw_hearts(self, x: float, y: float, size: float = 12.0) -> None:
+        """Render remaining lives as heart icons in the top HUD.
+
+        Parameters
+        ----------
+        x : float
+            Starting horizontal anchor coordinate.
+        y : float
+            Vertical anchor coordinate.
+        size : float
+            Scale radius of each heart lobe.
+        """
+        for i in range(PLAYER_MAX_LIVES):
+            hx = x + i * (size * 2.8)
+            hy = y
+
+            # Heart geometry formed by two circles and an inverted triangle
+            if i < self.lives:
+                # Active red heart
+                color = (255, 50, 70)
+                pygame.draw.circle(self.screen, color, (int(hx - size * 0.5), int(hy)), int(size * 0.5))
+                pygame.draw.circle(self.screen, color, (int(hx + size * 0.5), int(hy)), int(size * 0.5))
+                triangle_pts = [
+                    (hx - size * 1.0, hy + size * 0.1),
+                    (hx + size * 1.0, hy + size * 0.1),
+                    (hx, hy + size * 1.2),
+                ]
+                pygame.draw.polygon(self.screen, color, triangle_pts)
+            else:
+                # Lost / empty heart (dim outline)
+                empty_color = (60, 65, 80)
+                pygame.draw.circle(self.screen, empty_color, (int(hx - size * 0.5), int(hy)), int(size * 0.5), 2)
+                pygame.draw.circle(self.screen, empty_color, (int(hx + size * 0.5), int(hy)), int(size * 0.5), 2)
+                triangle_pts = [
+                    (hx - size * 1.0, hy + size * 0.1),
+                    (hx + size * 1.0, hy + size * 0.1),
+                    (hx, hy + size * 1.2),
+                ]
+                pygame.draw.polygon(self.screen, empty_color, triangle_pts, 2)
+
     def _run_playing(self, dt: float) -> None:
         """Update and render the active game state."""
         log_state()
@@ -161,12 +203,20 @@ class Game:
                 asteroid.kill()
                 continue
 
-            if asteroid.collides_with(self.player):
+            # Collision check with player (with invulnerability & damage flash)
+            if not self.player.is_invulnerable and asteroid.collides_with(self.player):
                 log_event("player_hit")
-                self.repo.save_score(self.score)
-                self.high_scores = self.repo.get_top_scores(3)
-                self.state = "GAMEOVER"
-                break
+                self.lives -= 1
+                self.player.trigger_hit()
+
+                # Split the colliding asteroid
+                asteroid.split()
+
+                if self.lives <= 0:
+                    self.repo.save_score(self.score)
+                    self.high_scores = self.repo.get_top_scores(3)
+                    self.state = "GAMEOVER"
+                    break
 
             for shot in self.shots:
                 if asteroid.collides_with(shot):
@@ -178,7 +228,9 @@ class Game:
         for draw in self.drawable:
             draw.draw(self.screen)
 
+        # HUD: Score and Lives
         self.draw_text(f"Score: {self.score}", self.font, "white", 20, 20)
+        self.draw_hearts(SCREEN_WIDTH - 140, 26, size=11.0)
 
     def _run_gameover(self) -> None:
         """Render the game over screen."""
