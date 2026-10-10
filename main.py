@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pygame
 
@@ -22,8 +23,18 @@ class Game:
     def __init__(self) -> None:
         """Initialize the game state, Pygame, and groups."""
         pygame.init()
+
+        # Set game window icon and title before/at display creation
+        icon_path = Path(__file__).parent / "assets" / "icon.png"
+        if icon_path.exists():
+            try:
+                icon_surf = pygame.image.load(str(icon_path))
+                pygame.display.set_icon(icon_surf)
+            except pygame.error:
+                log_event("icon_load_failed")
+
+        pygame.display.set_caption("Asteroids - Space Combat", "Asteroids")
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Asteroids")
 
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 36)
