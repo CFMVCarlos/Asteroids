@@ -33,7 +33,10 @@ class Game:
         self.state = "MENU"  # MENU, PLAYING, GAMEOVER
         self.score = 0
         self.lives = PLAYER_MAX_LIVES
-        self.high_scores = self.repo.get_top_scores(3)
+        self.player_name = "PILOT"
+        self.score_saved = False
+        self.cursor_timer = 0.0
+        self.high_scores = self.repo.get_top_scores(5)
         self.init_game_objects()
 
     def init_game_objects(self) -> None:
@@ -52,12 +55,13 @@ class Game:
         self.asteroid_field = AsteroidField()
         self.score = 0
         self.lives = PLAYER_MAX_LIVES
+        self.score_saved = False
 
     def draw_text(
         self,
         text: str,
         font: pygame.font.Font,
-        color: str,
+        color: str | tuple[int, int, int] | pygame.Color,
         x: float,
         y: float,
         center: bool = False,
@@ -82,16 +86,39 @@ class Game:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.quit()
-                    elif (
-                        (self.state == "MENU" and event.key == pygame.K_SPACE)
-                        or (self.state == "GAMEOVER" and event.key == pygame.K_r)
-                    ):
+                    elif self.state == "MENU" and event.key == pygame.K_SPACE:
                         self.state = "PLAYING"
                         self.init_game_objects()
+                    elif self.state == "GAMEOVER":
+                        if event.key == pygame.K_RETURN:
+                            # Save score with custom name if not yet saved
+                            if not self.score_saved:
+                                name_to_save = self.player_name.strip() or "PILOT"
+                                self.repo.save_score(self.score, name_to_save)
+                                self.high_scores = self.repo.get_top_scores(5)
+                                self.score_saved = True
+                        elif event.key == pygame.K_r:
+                            # Auto-save score on restart if uncommitted
+                            if not self.score_saved:
+                                name_to_save = self.player_name.strip() or "PILOT"
+                                self.repo.save_score(self.score, name_to_save)
+                                self.high_scores = self.repo.get_top_scores(5)
+                                self.score_saved = True
+                            self.state = "PLAYING"
+                            self.init_game_objects()
+                        elif event.key == pygame.K_BACKSPACE:
+                            if not self.score_saved and len(self.player_name) > 0:
+                                self.player_name = self.player_name[:-1]
+                        elif not self.score_saved and event.unicode:
+                            # Allow alphanumeric and dash/underscore characters up to 10 chars
+                            char = event.unicode.upper()
+                            if (char.isalnum() or char in "-_ ") and len(self.player_name) < 10:
+                                self.player_name += char
 
             self.screen.fill("black")
 
             dt = self.clock.tick(60) / 1000
+            self.cursor_timer += dt
 
             if self.state == "MENU":
                 self._run_menu()
@@ -109,7 +136,7 @@ class Game:
             self.large_font,
             "white",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 3,
+            SCREEN_HEIGHT / 3.8,
             center=True,
         )
         self.draw_text(
@@ -117,21 +144,24 @@ class Game:
             self.font,
             "gray",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 2,
+            SCREEN_HEIGHT / 2.5,
             center=True,
         )
 
-        # Draw high scores
-        y_offset = SCREEN_HEIGHT * 0.6
+        # Draw scoreboard
+        y_offset = SCREEN_HEIGHT * 0.48
         self.draw_text(
-            "Top Scores:", self.font, "white", SCREEN_WIDTH / 2, y_offset, center=True
+            "TOP PILOTS SCOREBOARD", self.font, (255, 215, 0), SCREEN_WIDTH / 2, y_offset, center=True
         )
+        y_offset += 15
         for i, score_record in enumerate(self.high_scores):
-            y_offset += 40
+            y_offset += 38
+            player_tag = score_record["player_name"].ljust(10)
+            score_tag = str(score_record["score"]).rjust(6)
             self.draw_text(
-                f"{i + 1}. {score_record['score']}",
+                f"{i + 1}.  {player_tag}   {score_tag} PTS",
                 self.font,
-                "gray",
+                "white" if i == 0 else "gray",
                 SCREEN_WIDTH / 2,
                 y_offset,
                 center=True,
@@ -213,8 +243,7 @@ class Game:
                 asteroid.split()
 
                 if self.lives <= 0:
-                    self.repo.save_score(self.score)
-                    self.high_scores = self.repo.get_top_scores(3)
+                    self.score_saved = False
                     self.state = "GAMEOVER"
                     break
 
@@ -233,13 +262,13 @@ class Game:
         self.draw_hearts(SCREEN_WIDTH - 140, 26, size=11.0)
 
     def _run_gameover(self) -> None:
-        """Render the game over screen."""
+        """Render the game over screen with interactive pilot name entry and high scores."""
         self.draw_text(
             "GAME OVER",
             self.large_font,
             "red",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 3,
+            SCREEN_HEIGHT / 4.5,
             center=True,
         )
         self.draw_text(
@@ -247,15 +276,54 @@ class Game:
             self.font,
             "white",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 2,
+            SCREEN_HEIGHT / 2.9,
             center=True,
         )
+
+        # Pilot Name Input Area
+        cursor = "_" if int(self.cursor_timer * 3) % 2 == 0 and not self.score_saved else ""
+        display_name = f"{self.player_name}{cursor}"
+        box_y = SCREEN_HEIGHT * 0.44
+
+        if not self.score_saved:
+            self.draw_text(
+                "Enter Pilot Name & Press ENTER to Save:",
+                self.font,
+                (255, 215, 0),
+                SCREEN_WIDTH / 2,
+                box_y,
+                center=True,
+            )
+            # Input Box rectangle
+            box_rect = pygame.Rect(0, 0, 280, 48)
+            box_rect.center = (int(SCREEN_WIDTH / 2), int(box_y + 45))
+            pygame.draw.rect(self.screen, (30, 35, 50), box_rect, border_radius=8)
+            pygame.draw.rect(self.screen, (100, 150, 255), box_rect, width=2, border_radius=8)
+
+            self.draw_text(
+                display_name,
+                self.font,
+                "white",
+                SCREEN_WIDTH / 2,
+                box_y + 45,
+                center=True,
+            )
+        else:
+            self.draw_text(
+                f"Score Saved for Pilot: {self.player_name}!",
+                self.font,
+                (100, 255, 120),
+                SCREEN_WIDTH / 2,
+                box_y + 25,
+                center=True,
+            )
+
         self.draw_text(
-            "Press 'R' to Restart",
+            "Press 'R' to Play Again  |  ESC to Quit",
             self.font,
             "gray",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT * 0.6,
+            SCREEN_HEIGHT * 0.72,
             center=True,
         )
 
