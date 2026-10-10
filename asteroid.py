@@ -6,6 +6,7 @@ import pygame
 
 from circleshape import CircleShape
 from constants import (
+    ASTEROID_LIFETIME_SECONDS,
     ASTEROID_MIN_RADIUS,
     LINE_WIDTH,
     SCREEN_HEIGHT,
@@ -47,6 +48,7 @@ class Asteroid(CircleShape):
         self.hp: int = SPECIAL_ASTEROID_HP if is_special else 1
         self.max_hp: int = self.hp
         self.hit_flash_timer: float = 0.0
+        self.age: float = 0.0
 
         # Generate unique jagged procedural perimeter offsets
         num_vertices = random.randint(9, 13)
@@ -155,20 +157,34 @@ class Asteroid(CircleShape):
         """
         self.position += self.velocity * dt
         self.rotation += self.rot_speed * dt
+        self.age += dt
         if self.hit_flash_timer > 0:
             self.hit_flash_timer = max(0.0, self.hit_flash_timer - dt)
 
-        # Screen wrap-around for asteroids
+        # Once TTL (30s) has elapsed, do not loop when going off-screen; destroy into void
         pad = self.radius * 1.5
-        if self.position.x < -pad:
-            self.position.x = SCREEN_WIDTH + pad
-        elif self.position.x > SCREEN_WIDTH + pad:
-            self.position.x = -pad
+        is_off_screen = (
+            self.position.x < -pad
+            or self.position.x > SCREEN_WIDTH + pad
+            or self.position.y < -pad
+            or self.position.y > SCREEN_HEIGHT + pad
+        )
 
-        if self.position.y < -pad:
-            self.position.y = SCREEN_HEIGHT + pad
-        elif self.position.y > SCREEN_HEIGHT + pad:
-            self.position.y = -pad
+        if is_off_screen:
+            if self.age >= ASTEROID_LIFETIME_SECONDS:
+                self.kill()
+                return
+
+            # Otherwise loop/wrap around screen
+            if self.position.x < -pad:
+                self.position.x = SCREEN_WIDTH + pad
+            elif self.position.x > SCREEN_WIDTH + pad:
+                self.position.x = -pad
+
+            if self.position.y < -pad:
+                self.position.y = SCREEN_HEIGHT + pad
+            elif self.position.y > SCREEN_HEIGHT + pad:
+                self.position.y = -pad
 
     def split(self) -> bool:
         """Process hit damage. Return True if asteroid was completely destroyed, False if still alive.
