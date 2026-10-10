@@ -9,6 +9,7 @@ from constants import (
     PLAYER_ACCELERATION,
     PLAYER_DRAG,
     PLAYER_HYPERSPACE_COOLDOWN_SECONDS,
+    PLAYER_HYPERSPACE_WARP_DISTANCE,
     PLAYER_INVULNERABLE_DURATION_SECONDS,
     PLAYER_MAX_SPEED,
     PLAYER_RADIUS,
@@ -79,18 +80,32 @@ class Player(CircleShape):
         self.magnet_timer: float = 0.0
 
     def trigger_hyperspace(self) -> bool:
-        """Trigger an emergency hyperspace leap to a random screen coordinate."""
+        """Trigger an emergency hyperspace forward warp jump along current facing direction."""
         if self.hyperspace_cooldown > 0.0:
             return False
 
-        # Reset velocity to 0 and teleport randomly
-        padding = 100
-        self.position.x = random.uniform(padding, SCREEN_WIDTH - padding)
-        self.position.y = random.uniform(padding, SCREEN_HEIGHT - padding)
-        self.velocity = pygame.Vector2(0, 0)
+        forward = pygame.Vector2(0, 1).rotate(self.rotation)
+
+        # Warp forward in facing direction with arcade screen wrap-around
+        self.position += forward * PLAYER_HYPERSPACE_WARP_DISTANCE
+
+        if self.position.x < -self.radius:
+            self.position.x = SCREEN_WIDTH + self.radius
+        elif self.position.x > SCREEN_WIDTH + self.radius:
+            self.position.x = -self.radius
+
+        if self.position.y < -self.radius:
+            self.position.y = SCREEN_HEIGHT + self.radius
+        elif self.position.y > SCREEN_HEIGHT + self.radius:
+            self.position.y = -self.radius
+
+        # Retain or impart forward momentum in warp direction
+        self.velocity = forward * min(
+            PLAYER_MAX_SPEED, max(self.velocity.length(), 280.0)
+        )
         self.hyperspace_cooldown = PLAYER_HYPERSPACE_COOLDOWN_SECONDS
 
-        # Brief 1.5s invulnerability so you don't land right on an asteroid and die
+        # Brief 1.5s invulnerability buffer during warp transition
         self.invulnerable_timer = max(self.invulnerable_timer, 1.5)
         self.flash_timer = 0.0
         return True
