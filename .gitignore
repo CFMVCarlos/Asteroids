@@ -16,3 +16,4 @@ game_events.jsonl
 .agents/
 graphify-out/
 
+asteroids.db
