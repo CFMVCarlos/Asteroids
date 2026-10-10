@@ -206,19 +206,27 @@ class Game:
             center=True,
         )
 
-        # Scoreboard
-        y_offset = SCREEN_HEIGHT * 0.52
+        self.draw_scoreboard(SCREEN_HEIGHT * 0.52)
+
+    def draw_scoreboard(self, start_y: float) -> None:
+        """Render top pilots scoreboard.
+
+        Parameters
+        ----------
+        start_y : float
+            Vertical starting coordinate for the scoreboard section.
+        """
         self.draw_text(
             "TOP PILOTS SCOREBOARD",
             self.font,
             (255, 215, 0),
             SCREEN_WIDTH / 2,
-            y_offset,
+            start_y,
             center=True,
         )
-        y_offset += 15
+        y_offset = start_y + 15
         for i, score_record in enumerate(self.high_scores):
-            y_offset += 36
+            y_offset += 34
             player_tag = score_record["player_name"].ljust(18)
             score_tag = str(score_record["score"]).rjust(6)
             self.draw_text(
@@ -450,48 +458,42 @@ class Game:
             badge_y += 32
 
     def _run_gameover(self) -> None:
-        """Render the game over screen."""
+        """Render the game over screen with full leaderboard."""
         self.draw_text(
             "GAME OVER",
             self.large_font,
             "red",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 4.5,
+            SCREEN_HEIGHT * 0.12,
             center=True,
         )
         self.draw_text(
-            f"Final Score: {self.score}",
+            f"Final Score: {self.score}   |   Pilot: {self.player_name}",
             self.font,
             "white",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT / 3.0,
+            SCREEN_HEIGHT * 0.22,
             center=True,
         )
 
         self.draw_text(
-            f"Pilot: {self.player_name}",
-            self.font,
-            (255, 215, 0),
-            SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT * 0.44,
-            center=True,
-        )
-
-        self.draw_text(
-            "Score successfully recorded to Leaderboard!",
+            "Score recorded to Leaderboard!",
             self.badge_font,
             (100, 255, 120),
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT * 0.52,
+            SCREEN_HEIGHT * 0.28,
             center=True,
         )
+
+        # Leaderboard in center/lower screen
+        self.draw_scoreboard(SCREEN_HEIGHT * 0.35)
 
         self.draw_text(
             "Press 'ENTER' or 'R' to Play Again  |  ESC to Quit",
             self.font,
             "white",
             SCREEN_WIDTH / 2,
-            SCREEN_HEIGHT * 0.68,
+            SCREEN_HEIGHT * 0.88,
             center=True,
         )
 
