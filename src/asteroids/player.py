@@ -3,8 +3,8 @@ from typing import ClassVar, TypedDict
 
 import pygame
 
-from circleshape import CircleShape
-from constants import (
+from .circleshape import CircleShape
+from .constants import (
     LINE_WIDTH,
     PLAYER_ACCELERATION,
     PLAYER_DRAG,
@@ -26,7 +26,7 @@ from constants import (
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
-from shot import Shot
+from .shot import Shot
 
 
 class ExhaustParticle(TypedDict):

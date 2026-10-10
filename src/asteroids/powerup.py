@@ -8,8 +8,8 @@ from typing import ClassVar, Literal
 
 import pygame
 
-from circleshape import CircleShape
-from constants import (
+from .circleshape import CircleShape
+from .constants import (
     LINE_WIDTH,
     POWERUP_LIFETIME_SECONDS,
     POWERUP_RADIUS,

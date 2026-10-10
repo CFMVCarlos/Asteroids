@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 [[package]]
 name = "asteroids"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "pygame" },
 ]
@@ -32,7 +32,7 @@ dev = [
 [[package]]
 name = "basedpyright"
 version = "1.39.10"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 dependencies = [
     { name = "nodejs-wheel-binaries" },
 ]
@@ -44,7 +44,7 @@ wheels = [
 [[package]]
 name = "click"
 version = "8.5.0"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
@@ -53,7 +53,7 @@ wheels = [
 [[package]]
 name = "docstring-parser-fork"
 version = "0.0.16"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/04/ce/48b17c6c24d0af112f73721a90fac245450e548b82b53169260720f60d07/docstring_parser_fork-0.0.16.tar.gz", hash = "sha256:9ecf861ceab8b87d1297a71001c15a1956ad02e87434ee6473643a5988094f7c", size = 36360, upload-time = "2026-07-03T07:27:46.668Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c1/69/427c34e61827818942b48ececd7c892b8f58ba4ce4cfc89ba9fd8dbe8a8d/docstring_parser_fork-0.0.16-py3-none-any.whl", hash = "sha256:c024c97af582d6acf85a14f0b332b3a2ab08626648d251c25e47191f33064386", size = 25253, upload-time = "2026-07-03T07:27:45.591Z" },
@@ -62,7 +62,7 @@ wheels = [
 [[package]]
 name = "nodejs-wheel-binaries"
 version = "24.19.0"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c0/76/7e97195e14346598565a0de4ca8bdbd5e634b3fb5b1ba590b7b1b89f8a63/nodejs_wheel_binaries-24.19.0.tar.gz", hash = "sha256:db217eef8cab8551667863379b08db4d9067403f6cbbe87481eb40edceb8aa9b", size = 8058, upload-time = "2026-08-19T21:47:19.671Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8c/52/0774b52c7be8151ad9d5aff44edc100c3f13d6d8eb3765f63ffa40e69fe8/nodejs_wheel_binaries-24.19.0-py2.py3-none-macosx_13_0_arm64.whl", hash = "sha256:e12cbfd69089504e42fb14194ce734a9dcf3eb38c820ca63dd511d36fb964e9c", size = 56047203, upload-time = "2026-08-19T21:46:43.448Z" },
@@ -78,7 +78,7 @@ wheels = [
 [[package]]
 name = "pydoclint"
 version = "0.9.1"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 dependencies = [
     { name = "click" },
     { name = "docstring-parser-fork" },
@@ -91,7 +91,7 @@ wheels = [
 [[package]]
 name = "pygame"
 version = "2.6.1"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/49/cc/08bba60f00541f62aaa252ce0cfbd60aebd04616c0b9574f755b583e45ae/pygame-2.6.1.tar.gz", hash = "sha256:56fb02ead529cee00d415c3e007f75e0780c655909aaa8e8bf616ee09c9feb1f", size = 14808125, upload-time = "2024-09-29T13:41:34.698Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/91/718acf3e2a9d08a6ddcc96bd02a6f63c99ee7ba14afeaff2a51c987df0b9/pygame-2.6.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:ae6039f3a55d800db80e8010f387557b528d34d534435e0871326804df2a62f2", size = 13090765, upload-time = "2024-09-29T14:27:02.377Z" },
@@ -106,7 +106,7 @@ wheels = [
 [[package]]
 name = "ruff"
 version = "0.16.5"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f3/85/c8e12473c93018f92d19dd988a294202e1c27426c47ec4de53ffb847b8d8/ruff-0.16.5.tar.gz", hash = "sha256:1b88500f9ffbcab3dedb0082c9f9492e91ec3d618aac1236a3e0189938f7040b", size = 4912003, upload-time = "2026-08-27T16:34:18.258Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/b6/77c90a970fe2dae17a723acbd011043ea97c98d7deacccefdc4ba74ec512/ruff-0.16.5-py3-none-linux_armv6l.whl", hash = "sha256:12e5f673e774c35fbb62f288809c7653b73445f8ecec6b6063fd6ea3521aa14b", size = 10011941, upload-time = "2026-08-27T16:33:41.287Z" },
@@ -131,7 +131,7 @@ wheels = [
 [[package]]
 name = "ty"
 version = "0.0.78"
-source = { registry = "https://pypi.org/simple" }
+source = { registry = "https://gitlab.com/api/v4/groups/58107400/-/packages/pypi/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/c7/2ba0861384c5b5097ac354383abb98188112cb330208c21d5197e98a29e5/ty-0.0.78.tar.gz", hash = "sha256:770b45854f85fa11595208f08c0f28df80943164d10a2832d86be6ac29f135b2", size = 7050609, upload-time = "2026-09-02T22:41:33.92Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ea/ed/f34cfc06a9ba72979df219e48dae1a0b6a6c74a340763ccd30a547edf913/ty-0.0.78-py3-none-linux_armv6l.whl", hash = "sha256:122700b98f9d45785c1ce91a9418154562e7f64f4bf34679f6f7b38c5b97453f", size = 13304624, upload-time = "2026-09-02T22:40:56.649Z" },

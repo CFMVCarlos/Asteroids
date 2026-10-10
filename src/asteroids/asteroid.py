@@ -4,8 +4,8 @@ from typing import ClassVar
 
 import pygame
 
-from circleshape import CircleShape
-from constants import (
+from .circleshape import CircleShape
+from .constants import (
     ASTEROID_LIFETIME_SECONDS,
     ASTEROID_MIN_RADIUS,
     LINE_WIDTH,
@@ -13,7 +13,7 @@ from constants import (
     SCREEN_WIDTH,
     SPECIAL_ASTEROID_HP,
 )
-from logger import log_event
+from .logger import log_event
 
 
 class Asteroid(CircleShape):

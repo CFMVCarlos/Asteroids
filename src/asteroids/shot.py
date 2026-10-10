@@ -6,8 +6,8 @@ from typing import ClassVar
 
 import pygame
 
-from circleshape import CircleShape
-from constants import LINE_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, SHOT_RADIUS
+from .circleshape import CircleShape
+from .constants import LINE_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, SHOT_RADIUS
 
 
 class Shot(CircleShape):

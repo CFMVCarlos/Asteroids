@@ -8,8 +8,8 @@ from typing import ClassVar
 
 import pygame
 
-from asteroid import Asteroid
-from constants import (
+from .asteroid import Asteroid
+from .constants import (
     ASTEROID_KINDS,
     ASTEROID_MAX_RADIUS,
     ASTEROID_MIN_RADIUS,

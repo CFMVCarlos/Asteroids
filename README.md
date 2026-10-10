@@ -13,6 +13,12 @@ An arcade space combat game built with Python 3.13+ and Pygame, featuring vector
 
 ---
 
+<p align="center">
+  <img src="assets/gameplay_screenshot.png" alt="Asteroids Gameplay Screenshot" width="100%" style="border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);" />
+</p>
+
+---
+
 </div>
 
 ## 🌌 Overview
@@ -67,19 +73,24 @@ An arcade space combat game built with Python 3.13+ and Pygame, featuring vector
 ```text
 Asteroids/
 ├── assets/
-│   └── icon.png         # Custom window icon
-├── asteroid.py          # Asteroid entity, procedural vertices, HP & TTL
-├── asteroidfield.py     # Procedural edge-spawner & wave cap manager
-├── circleshape.py       # Base 2D sprite class with circle collision logic
-├── constants.py         # Physics, dimensions, cooldowns, and skill timings
-├── logger.py            # Event & state JSONL telemetry recorder
-├── main.py              # Game controller, states (MENU, PLAYING, PAUSED, GAMEOVER), HUD
-├── player.py            # Rocket ship model, inertia, skills, forward warp leap
-├── powerup.py           # 8 collectible floating skill orbs with screen looping
-├── repository.py        # SQLite high scores persistence & pilot callsigns
-├── shot.py              # Laser projectile entity with homing tracking
-├── pyproject.toml       # Project metadata, dependencies & tool configs
-└── uv.lock              # Deterministic lockfile
+│   ├── icon.png                  # Custom window icon
+│   └── gameplay_screenshot.png   # In-game preview screenshot
+├── src/
+│   └── asteroids/                # Core game package
+│       ├── __init__.py           # Package exports
+│       ├── asteroid.py           # Asteroid entity, procedural vertices, HP & TTL
+│       ├── asteroidfield.py      # Procedural edge-spawner & wave cap manager
+│       ├── circleshape.py        # Base 2D sprite class with circle collision logic
+│       ├── constants.py          # Physics, dimensions, cooldowns, and skill timings
+│       ├── logger.py             # Event & state JSONL telemetry recorder
+│       ├── main.py               # Game controller, states (MENU, PLAYING, PAUSED, GAMEOVER), HUD
+│       ├── player.py             # Rocket ship model, inertia, skills, forward warp leap
+│       ├── powerup.py            # 8 collectible floating skill orbs with screen looping
+│       ├── repository.py         # SQLite high scores persistence & pilot callsigns
+│       └── shot.py               # Laser projectile entity with homing tracking
+├── main.py                       # Top-level launch script
+├── pyproject.toml                # Project metadata, dependencies, build-system & tool configs
+└── uv.lock                       # Deterministic lockfile
 ```
 
 ---

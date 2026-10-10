@@ -14,10 +14,15 @@ class HighScore(TypedDict):
 
 
 class HighScoreRepository:
-    """Repository for managing high score persistence using SQLite."""
+    """Repository for managing high score persistence using SQLite.
+
+    Parameters
+    ----------
+    db_path : str
+        Filesystem path to SQLite database or ':memory:'.
+    """
 
     def __init__(self, db_path: str = "asteroids.db") -> None:
-        """Initialize the repository and create the table if it doesn't exist."""
         self.db_path = db_path
         # Use an in-memory database if :memory: is provided, and keep connection open
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
