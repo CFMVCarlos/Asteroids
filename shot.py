@@ -7,7 +7,7 @@ from typing import ClassVar
 import pygame
 
 from circleshape import CircleShape
-from constants import LINE_WIDTH, SHOT_RADIUS
+from constants import LINE_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, SHOT_RADIUS
 
 
 class Shot(CircleShape):
@@ -81,3 +81,11 @@ class Shot(CircleShape):
                     self.velocity = steered * curr_speed
 
         self.position += self.velocity * dt
+        # Disappear immediately upon leaving the screen without wrapping
+        if (
+            self.position.x < -self.radius
+            or self.position.x > SCREEN_WIDTH + self.radius
+            or self.position.y < -self.radius
+            or self.position.y > SCREEN_HEIGHT + self.radius
+        ):
+            self.kill()

@@ -9,7 +9,13 @@ from typing import ClassVar, Literal
 import pygame
 
 from circleshape import CircleShape
-from constants import LINE_WIDTH, POWERUP_LIFETIME_SECONDS, POWERUP_RADIUS
+from constants import (
+    LINE_WIDTH,
+    POWERUP_LIFETIME_SECONDS,
+    POWERUP_RADIUS,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
 
 PowerUpType = Literal[
     "TRIPLE_SHOT",
@@ -82,6 +88,18 @@ class PowerUp(CircleShape):
         self.lifetime -= dt
         if self.lifetime <= 0:
             self.kill()
+            return
+
+        # Screen wrap-around like the player so power-ups stay in play during lifetime
+        if self.position.x < -self.radius:
+            self.position.x = SCREEN_WIDTH + self.radius
+        elif self.position.x > SCREEN_WIDTH + self.radius:
+            self.position.x = -self.radius
+
+        if self.position.y < -self.radius:
+            self.position.y = SCREEN_HEIGHT + self.radius
+        elif self.position.y > SCREEN_HEIGHT + self.radius:
+            self.position.y = -self.radius
 
     def draw(self, screen: pygame.Surface) -> None:
         """Render glowing pulsating orb with unique icon and color badge.
