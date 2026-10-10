@@ -170,21 +170,21 @@ class Game:
             center=True,
         )
 
-        cursor = "_" if int(self.cursor_timer * 3) % 2 == 0 else ""
-        display_name = f"{self.player_name}{cursor}"
         box_rect = pygame.Rect(0, 0, 380, 46)
         box_rect.center = (int(SCREEN_WIDTH / 2), int(box_y + 40))
         pygame.draw.rect(self.screen, (25, 30, 45), box_rect, border_radius=8)
         pygame.draw.rect(self.screen, (0, 240, 160), box_rect, width=2, border_radius=8)
 
-        self.draw_text(
-            display_name,
-            self.font,
-            "white",
-            SCREEN_WIDTH / 2,
-            box_y + 40,
-            center=True,
-        )
+        # Render stable text (no jitter / horizontal shifting)
+        text_surf = self.font.render(self.player_name, True, "white")
+        text_rect = text_surf.get_rect(center=box_rect.center)
+        self.screen.blit(text_surf, text_rect)
+
+        # Only blink a cursor prompt if name is empty
+        if not self.player_name and int(self.cursor_timer * 3) % 2 == 0:
+            cursor_surf = self.font.render("_", True, (0, 240, 160))
+            cursor_rect = cursor_surf.get_rect(center=box_rect.center)
+            self.screen.blit(cursor_surf, cursor_rect)
 
         self.draw_text(
             "Press ENTER to Start Game  |  ESC to Quit",
