@@ -81,10 +81,8 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         self.quit()
                     elif (
-                        self.state == "MENU"
-                        and event.key == pygame.K_SPACE
-                        or self.state == "GAMEOVER"
-                        and event.key == pygame.K_r
+                        (self.state == "MENU" and event.key == pygame.K_SPACE)
+                        or (self.state == "GAMEOVER" and event.key == pygame.K_r)
                     ):
                         self.state = "PLAYING"
                         self.init_game_objects()
