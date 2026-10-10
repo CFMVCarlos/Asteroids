@@ -11,6 +11,7 @@ from asteroidfield import AsteroidField
 from constants import PLAYER_MAX_LIVES, SCREEN_HEIGHT, SCREEN_WIDTH
 from logger import log_event, log_state
 from player import Player
+from powerup import PowerUp
 from repository import HighScoreRepository
 from shot import Shot
 
@@ -27,6 +28,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 36)
         self.large_font = pygame.font.SysFont(None, 72)
+        self.badge_font = pygame.font.SysFont(None, 24, bold=True)
 
         self.repo = HighScoreRepository()
 
@@ -45,11 +47,13 @@ class Game:
         self.drawable = pygame.sprite.Group()
         self.asteroids = pygame.sprite.Group()
         self.shots = pygame.sprite.Group()
+        self.powerups = pygame.sprite.Group()
 
         Player.containers = (self.updatable, self.drawable)
         Asteroid.containers = (self.asteroids, self.updatable, self.drawable)
         AsteroidField.containers = (self.updatable,)
         Shot.containers = (self.shots, self.updatable, self.drawable)
+        PowerUp.containers = (self.powerups, self.updatable, self.drawable)
 
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.asteroid_field = AsteroidField()
@@ -112,7 +116,9 @@ class Game:
                         elif not self.score_saved and event.unicode:
                             # Allow alphanumeric and dash/underscore characters up to 10 chars
                             char = event.unicode.upper()
-                            if (char.isalnum() or char in "-_ ") and len(self.player_name) < 10:
+                            if (char.isalnum() or char in "-_ ") and len(
+                                self.player_name
+                            ) < 10:
                                 self.player_name += char
 
             self.screen.fill("black")
@@ -151,7 +157,12 @@ class Game:
         # Draw scoreboard
         y_offset = SCREEN_HEIGHT * 0.48
         self.draw_text(
-            "TOP PILOTS SCOREBOARD", self.font, (255, 215, 0), SCREEN_WIDTH / 2, y_offset, center=True
+            "TOP PILOTS SCOREBOARD",
+            self.font,
+            (255, 215, 0),
+            SCREEN_WIDTH / 2,
+            y_offset,
+            center=True,
         )
         y_offset += 15
         for i, score_record in enumerate(self.high_scores):
@@ -187,8 +198,12 @@ class Game:
             if i < self.lives:
                 # Active red heart
                 color = (255, 50, 70)
-                pygame.draw.circle(self.screen, color, (int(hx - size * 0.5), int(hy)), int(size * 0.5))
-                pygame.draw.circle(self.screen, color, (int(hx + size * 0.5), int(hy)), int(size * 0.5))
+                pygame.draw.circle(
+                    self.screen, color, (int(hx - size * 0.5), int(hy)), int(size * 0.5)
+                )
+                pygame.draw.circle(
+                    self.screen, color, (int(hx + size * 0.5), int(hy)), int(size * 0.5)
+                )
                 triangle_pts = [
                     (hx - size * 1.0, hy + size * 0.1),
                     (hx + size * 1.0, hy + size * 0.1),
@@ -198,8 +213,20 @@ class Game:
             else:
                 # Lost / empty heart (dim outline)
                 empty_color = (60, 65, 80)
-                pygame.draw.circle(self.screen, empty_color, (int(hx - size * 0.5), int(hy)), int(size * 0.5), 2)
-                pygame.draw.circle(self.screen, empty_color, (int(hx + size * 0.5), int(hy)), int(size * 0.5), 2)
+                pygame.draw.circle(
+                    self.screen,
+                    empty_color,
+                    (int(hx - size * 0.5), int(hy)),
+                    int(size * 0.5),
+                    2,
+                )
+                pygame.draw.circle(
+                    self.screen,
+                    empty_color,
+                    (int(hx + size * 0.5), int(hy)),
+                    int(size * 0.5),
+                    2,
+                )
                 triangle_pts = [
                     (hx - size * 1.0, hy + size * 0.1),
                     (hx + size * 1.0, hy + size * 0.1),
@@ -250,9 +277,24 @@ class Game:
             for shot in self.shots:
                 if asteroid.collides_with(shot):
                     log_event("asteroid_shot")
-                    asteroid.split()
                     shot.kill()
-                    self.score += 10
+                    was_special = asteroid.is_special
+                    split_or_destroyed = asteroid.split()
+                    if split_or_destroyed:
+                        self.score += 50 if was_special else 10
+                        if was_special:
+                            # Drop a random power-up collectible
+                            PowerUp(asteroid.position.x, asteroid.position.y)
+                    else:
+                        # Non-fatal hit on special asteroid (progress HP)
+                        self.score += 5
+
+        # Check player collision with powerups
+        for powerup in self.powerups:
+            if self.player.collides_with(powerup):
+                log_event("powerup_collected")
+                self.player.activate_powerup(powerup.kind)
+                powerup.kill()
 
         for draw in self.drawable:
             draw.draw(self.screen)
@@ -260,6 +302,36 @@ class Game:
         # HUD: Score and Lives
         self.draw_text(f"Score: {self.score}", self.font, "white", 20, 20)
         self.draw_hearts(SCREEN_WIDTH - 140, 26, size=11.0)
+
+        # HUD: Active Skill Countdown Badges
+        badge_x = 20
+        badge_y = 60
+        active_badges = []
+        if self.player.triple_shot_timer > 0.0:
+            active_badges.append(
+                (f"TRIPLE SHOT {self.player.triple_shot_timer:.1f}s", (0, 240, 160))
+            )
+        if self.player.rapid_fire_timer > 0.0:
+            active_badges.append(
+                (f"RAPID FIRE {self.player.rapid_fire_timer:.1f}s", (255, 200, 40))
+            )
+        if self.player.invincible_skill_timer > 0.0:
+            active_badges.append(
+                (
+                    f"INVINCIBLE {self.player.invincible_skill_timer:.1f}s",
+                    (220, 80, 255),
+                )
+            )
+
+        for text, color in active_badges:
+            badge_surf = self.badge_font.render(text, True, color)
+            # Semi-transparent dark pill background
+            bg_rect = badge_surf.get_rect(topleft=(badge_x, badge_y))
+            pill_rect = bg_rect.inflate(14, 6)
+            pygame.draw.rect(self.screen, (20, 25, 35), pill_rect, border_radius=6)
+            pygame.draw.rect(self.screen, color, pill_rect, 1, border_radius=6)
+            self.screen.blit(badge_surf, bg_rect)
+            badge_y += 32
 
     def _run_gameover(self) -> None:
         """Render the game over screen with interactive pilot name entry and high scores."""
@@ -281,7 +353,9 @@ class Game:
         )
 
         # Pilot Name Input Area
-        cursor = "_" if int(self.cursor_timer * 3) % 2 == 0 and not self.score_saved else ""
+        cursor = (
+            "_" if int(self.cursor_timer * 3) % 2 == 0 and not self.score_saved else ""
+        )
         display_name = f"{self.player_name}{cursor}"
         box_y = SCREEN_HEIGHT * 0.44
 
@@ -298,7 +372,9 @@ class Game:
             box_rect = pygame.Rect(0, 0, 280, 48)
             box_rect.center = (int(SCREEN_WIDTH / 2), int(box_y + 45))
             pygame.draw.rect(self.screen, (30, 35, 50), box_rect, border_radius=8)
-            pygame.draw.rect(self.screen, (100, 150, 255), box_rect, width=2, border_radius=8)
+            pygame.draw.rect(
+                self.screen, (100, 150, 255), box_rect, width=2, border_radius=8
+            )
 
             self.draw_text(
                 display_name,

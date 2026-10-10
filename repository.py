@@ -40,7 +40,9 @@ class HighScoreRepository:
         cursor.execute("PRAGMA table_info(high_scores)")
         columns = [col[1] for col in cursor.fetchall()]
         if "player_name" not in columns:
-            cursor.execute("ALTER TABLE high_scores ADD COLUMN player_name TEXT NOT NULL DEFAULT 'PILOT'")
+            cursor.execute(
+                "ALTER TABLE high_scores ADD COLUMN player_name TEXT NOT NULL DEFAULT 'PILOT'"
+            )
         self.conn.commit()
 
     def save_score(self, score: int, player_name: str = "PILOT") -> None:

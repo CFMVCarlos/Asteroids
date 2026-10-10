@@ -14,6 +14,9 @@ from constants import (
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOOT_SPEED,
     PLAYER_TURN_SPEED,
+    POWERUP_INVINCIBILITY_DURATION,
+    POWERUP_RAPID_FIRE_DURATION,
+    POWERUP_TRIPLE_SHOT_DURATION,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
 )
@@ -31,7 +34,7 @@ class ExhaustParticle(TypedDict):
 
 
 class Player(CircleShape):
-    """Controllable player rocket ship entity with inertia, lives, and damage flash.
+    """Controllable player rocket ship entity with inertia, lives, damage flash, and skill upgrades.
 
     Parameters
     ----------
@@ -58,6 +61,20 @@ class Player(CircleShape):
         self.invulnerable_timer: float = 0.0
         self.flash_timer: float = 0.0
 
+        # Skill Buff Timers
+        self.triple_shot_timer: float = 0.0
+        self.rapid_fire_timer: float = 0.0
+        self.invincible_skill_timer: float = 0.0
+
+    def activate_powerup(self, kind: str) -> None:
+        """Activate a skill buff for its designated duration."""
+        if kind == "TRIPLE_SHOT":
+            self.triple_shot_timer = POWERUP_TRIPLE_SHOT_DURATION
+        elif kind == "RAPID_FIRE":
+            self.rapid_fire_timer = POWERUP_RAPID_FIRE_DURATION
+        elif kind == "INVINCIBILITY":
+            self.invincible_skill_timer = POWERUP_INVINCIBILITY_DURATION
+
     def trigger_hit(self) -> None:
         """Trigger temporary invulnerability and flashing animation after taking damage."""
         self.invulnerable_timer = PLAYER_INVULNERABLE_DURATION_SECONDS
@@ -65,8 +82,8 @@ class Player(CircleShape):
 
     @property
     def is_invulnerable(self) -> bool:
-        """Check whether the ship is currently invulnerable."""
-        return self.invulnerable_timer > 0.0
+        """Check whether the ship is currently invulnerable from damage or star buff."""
+        return self.invulnerable_timer > 0.0 or self.invincible_skill_timer > 0.0
 
     def get_rocket_points(self) -> dict[str, list[pygame.Vector2]]:
         """Compute coordinates for the fuselage, wings, cockpit, and engine bell.
@@ -81,31 +98,59 @@ class Player(CircleShape):
 
         # Fuselage (sleek nosecone tapering into body)
         nose = self.position + forward * (self.radius * 1.35)
-        shoulder_right = self.position + forward * (self.radius * 0.1) + right * (self.radius * 0.45)
-        shoulder_left = self.position + forward * (self.radius * 0.1) - right * (self.radius * 0.45)
-        base_right = self.position - forward * (self.radius * 0.8) + right * (self.radius * 0.4)
-        base_left = self.position - forward * (self.radius * 0.8) - right * (self.radius * 0.4)
+        shoulder_right = (
+            self.position + forward * (self.radius * 0.1) + right * (self.radius * 0.45)
+        )
+        shoulder_left = (
+            self.position + forward * (self.radius * 0.1) - right * (self.radius * 0.45)
+        )
+        base_right = (
+            self.position - forward * (self.radius * 0.8) + right * (self.radius * 0.4)
+        )
+        base_left = (
+            self.position - forward * (self.radius * 0.8) - right * (self.radius * 0.4)
+        )
         fuselage = [nose, shoulder_right, base_right, base_left, shoulder_left]
 
         # Wings / Fins
-        wing_tip_right = self.position - forward * (self.radius * 0.9) + right * (self.radius * 1.15)
+        wing_tip_right = (
+            self.position - forward * (self.radius * 0.9) + right * (self.radius * 1.15)
+        )
         fin_right = [shoulder_right, wing_tip_right, base_right]
 
-        wing_tip_left = self.position - forward * (self.radius * 0.9) - right * (self.radius * 1.15)
+        wing_tip_left = (
+            self.position - forward * (self.radius * 0.9) - right * (self.radius * 1.15)
+        )
         fin_left = [shoulder_left, wing_tip_left, base_left]
 
         # Cockpit canopy
         canopy_tip = self.position + forward * (self.radius * 0.75)
-        canopy_r = self.position + forward * (self.radius * 0.1) + right * (self.radius * 0.2)
+        canopy_r = (
+            self.position + forward * (self.radius * 0.1) + right * (self.radius * 0.2)
+        )
         canopy_b = self.position - forward * (self.radius * 0.15)
-        canopy_l = self.position + forward * (self.radius * 0.1) - right * (self.radius * 0.2)
+        canopy_l = (
+            self.position + forward * (self.radius * 0.1) - right * (self.radius * 0.2)
+        )
         canopy = [canopy_tip, canopy_r, canopy_b, canopy_l]
 
         # Engine nozzle base
-        nozzle_l = self.position - forward * (self.radius * 0.8) - right * (self.radius * 0.22)
-        nozzle_r = self.position - forward * (self.radius * 0.8) + right * (self.radius * 0.22)
-        nozzle_bl = self.position - forward * (self.radius * 0.95) - right * (self.radius * 0.28)
-        nozzle_br = self.position - forward * (self.radius * 0.95) + right * (self.radius * 0.28)
+        nozzle_l = (
+            self.position - forward * (self.radius * 0.8) - right * (self.radius * 0.22)
+        )
+        nozzle_r = (
+            self.position - forward * (self.radius * 0.8) + right * (self.radius * 0.22)
+        )
+        nozzle_bl = (
+            self.position
+            - forward * (self.radius * 0.95)
+            - right * (self.radius * 0.28)
+        )
+        nozzle_br = (
+            self.position
+            - forward * (self.radius * 0.95)
+            + right * (self.radius * 0.28)
+        )
         nozzle = [nozzle_l, nozzle_r, nozzle_br, nozzle_bl]
 
         return {
@@ -186,6 +231,28 @@ class Player(CircleShape):
         pygame.draw.polygon(screen, (60, 200, 255), pts["canopy"])
         pygame.draw.polygon(screen, (180, 240, 255), pts["canopy"], 2)
 
+        # Draw Invincibility Shield Aura if active
+        if self.invincible_skill_timer > 0.0:
+            shield_radius = int(self.radius * 1.55)
+            # Pulsing violet-gold celestial shield
+            shield_alpha_pulse = int(self.flash_timer * 15) % 2
+            color = (255, 215, 0) if shield_alpha_pulse == 0 else (220, 80, 255)
+            pygame.draw.circle(
+                screen,
+                color,
+                (int(self.position.x), int(self.position.y)),
+                shield_radius,
+                2,
+            )
+            # Inner resonant ring
+            pygame.draw.circle(
+                screen,
+                (180, 100, 255),
+                (int(self.position.x), int(self.position.y)),
+                shield_radius - 4,
+                1,
+            )
+
     def rotate(self, dt: float) -> None:
         """Adjust the ship's rotation angle according to turn speed and elapsed time.
 
@@ -227,13 +294,15 @@ class Player(CircleShape):
             engine_pos = self.position - forward * self.radius
             spread = pygame.Vector2(random.uniform(-15, 15), random.uniform(-15, 15))
             particle_vel = -forward * random.uniform(80, 160) + spread
-            self.exhaust_particles.append({
-                "pos": pygame.Vector2(engine_pos.x, engine_pos.y),
-                "vel": particle_vel,
-                "radius": random.uniform(3.0, 5.5),
-                "life": 0.25,
-                "max_life": 0.25,
-            })
+            self.exhaust_particles.append(
+                {
+                    "pos": pygame.Vector2(engine_pos.x, engine_pos.y),
+                    "vel": particle_vel,
+                    "radius": random.uniform(3.0, 5.5),
+                    "life": 0.25,
+                    "max_life": 0.25,
+                }
+            )
 
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
             # Retro-thrusters / gentle brake
@@ -245,10 +314,18 @@ class Player(CircleShape):
 
         self.cooldown_timer -= dt
 
+        # Update skill buff timers
+        if self.triple_shot_timer > 0.0:
+            self.triple_shot_timer = max(0.0, self.triple_shot_timer - dt)
+        if self.rapid_fire_timer > 0.0:
+            self.rapid_fire_timer = max(0.0, self.rapid_fire_timer - dt)
+        if self.invincible_skill_timer > 0.0:
+            self.invincible_skill_timer = max(0.0, self.invincible_skill_timer - dt)
+
         # Update invulnerability flash timers
         if self.invulnerable_timer > 0.0:
             self.invulnerable_timer = max(0.0, self.invulnerable_timer - dt)
-            self.flash_timer += dt
+        self.flash_timer += dt
 
         # Apply ice-like drift / inertia & low drag
         # Exponential drag formula: vel * (drag ^ (dt * 60))
@@ -282,10 +359,26 @@ class Player(CircleShape):
         self.exhaust_particles = active_particles
 
     def shoot(self) -> None:
-        """Spawn a laser projectile moving in the ship's facing direction if off cooldown."""
+        """Spawn laser projectiles moving forward (or triple-spread if buff active) if off cooldown."""
         if self.cooldown_timer > 0:
             return
-        self.cooldown_timer = PLAYER_SHOOT_COOLDOWN_SECONDS
-        shot = Shot(self.position.x, self.position.y)
-        # Inherit facing velocity plus bullet muzzle speed
-        shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+
+        # Double attack speed (half cooldown) when RAPID_FIRE is active
+        base_cooldown = (
+            PLAYER_SHOOT_COOLDOWN_SECONDS * 0.5
+            if self.rapid_fire_timer > 0.0
+            else PLAYER_SHOOT_COOLDOWN_SECONDS
+        )
+        self.cooldown_timer = base_cooldown
+
+        if self.triple_shot_timer > 0.0:
+            # 3 shots: straight (0°), 45° to the right, and 45° to the left
+            angles = [self.rotation, self.rotation + 45.0, self.rotation - 45.0]
+            for angle in angles:
+                shot = Shot(self.position.x, self.position.y)
+                shot.velocity = pygame.Vector2(0, 1).rotate(angle) * PLAYER_SHOOT_SPEED
+        else:
+            shot = Shot(self.position.x, self.position.y)
+            shot.velocity = (
+                pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+            )

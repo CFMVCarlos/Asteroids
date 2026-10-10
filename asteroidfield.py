@@ -16,6 +16,7 @@ from constants import (
     ASTEROID_SPAWN_RATE_SECONDS,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    SPECIAL_ASTEROID_CHANCE,
 )
 
 Edge = tuple[pygame.Vector2, Callable[[float], pygame.Vector2]]
@@ -62,7 +63,11 @@ class AsteroidField(pygame.sprite.Sprite):
         self.spawn_timer: float = 0.0
 
     def spawn(
-        self, radius: float, position: pygame.Vector2, velocity: pygame.Vector2
+        self,
+        radius: float,
+        position: pygame.Vector2,
+        velocity: pygame.Vector2,
+        is_special: bool = False,
     ) -> None:
         """Instantiate and initialize an asteroid at a designated location.
 
@@ -74,8 +79,10 @@ class AsteroidField(pygame.sprite.Sprite):
             Initial 2D spawn coordinates.
         velocity : pygame.Vector2
             Initial 2D velocity vector.
+        is_special : bool
+            Whether this big asteroid is an illuminated 5-hit powerup bearer.
         """
-        asteroid = Asteroid(position.x, position.y, radius)
+        asteroid = Asteroid(position.x, position.y, radius, is_special=is_special)
         asteroid.velocity = velocity
 
     def update(self, dt: float) -> None:
@@ -97,4 +104,11 @@ class AsteroidField(pygame.sprite.Sprite):
             velocity = velocity.rotate(random.randint(-30, 30))
             position: pygame.Vector2 = edge[1](random.uniform(0, 1))
             kind: int = random.randint(1, ASTEROID_KINDS)
-            self.spawn(ASTEROID_MIN_RADIUS * kind, position, velocity)
+
+            # Only biggest asteroids (kind == ASTEROID_KINDS) can be special (5% chance)
+            is_special = (kind == ASTEROID_KINDS) and (
+                random.random() < SPECIAL_ASTEROID_CHANCE
+            )
+            self.spawn(
+                ASTEROID_MIN_RADIUS * kind, position, velocity, is_special=is_special
+            )
