@@ -119,8 +119,20 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.quit()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.quit()
+                    if event.key == pygame.K_p and self.state in ("PLAYING", "PAUSED"):
+                        # Toggle pause
+                        self.state = "PAUSED" if self.state == "PLAYING" else "PLAYING"
+                    elif event.key == pygame.K_ESCAPE:
+                        if self.state == "PLAYING":
+                            # In-game ESC pauses rather than abruptly quitting
+                            self.state = "PAUSED"
+                        elif self.state == "PAUSED":
+                            self.quit()
+                        else:
+                            self.quit()
+                    elif self.state == "PAUSED":
+                        if event.key in (pygame.K_SPACE, pygame.K_RETURN):
+                            self.state = "PLAYING"
                     elif self.state == "MENU":
                         if event.key == pygame.K_RETURN:
                             # Start game with current pilot name
@@ -154,6 +166,8 @@ class Game:
                 self._run_menu()
             elif self.state == "PLAYING":
                 self._run_playing(dt)
+            elif self.state == "PAUSED":
+                self._run_paused()
             elif self.state == "GAMEOVER":
                 self._run_gameover()
 
@@ -456,6 +470,60 @@ class Game:
             pygame.draw.rect(self.screen, color, pill_rect, 1, border_radius=6)
             self.screen.blit(badge_surf, bg_rect)
             badge_y += 32
+
+    def _run_paused(self) -> None:
+        """Render frozen game state overlaid with pause menu."""
+        # Draw all game entities in their frozen states
+        for draw in self.drawable:
+            draw.draw(self.screen)
+
+        # HUD: Score and Lives
+        multiplier_tag = (
+            " (2X PTS!)" if self.player.score_multiplier_timer > 0.0 else ""
+        )
+        self.draw_text(
+            f"Score: {self.score}{multiplier_tag}", self.font, "white", 20, 20
+        )
+        self.draw_hearts(SCREEN_WIDTH - 140, 26, size=11.0)
+
+        # Translucent dark backdrop tint
+        dim_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        dim_surf.fill((0, 0, 0))
+        dim_surf.set_alpha(150)
+        self.screen.blit(dim_surf, (0, 0))
+
+        # Pause modal banner
+        modal_rect = pygame.Rect(0, 0, 520, 220)
+        modal_rect.center = (int(SCREEN_WIDTH / 2), int(SCREEN_HEIGHT / 2))
+        pygame.draw.rect(self.screen, (20, 25, 40), modal_rect, border_radius=12)
+        pygame.draw.rect(
+            self.screen, (0, 240, 160), modal_rect, width=2, border_radius=12
+        )
+
+        self.draw_text(
+            "GAME PAUSED",
+            self.large_font,
+            "white",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 - 50,
+            center=True,
+        )
+        self.draw_text(
+            "Press 'P', 'SPACE', or 'ENTER' to Resume",
+            self.font,
+            (0, 240, 160),
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 + 10,
+            center=True,
+        )
+        self.draw_text(
+            "Press 'ESC' to Quit",
+            self.font,
+            "gray",
+            SCREEN_WIDTH / 2,
+            SCREEN_HEIGHT / 2 + 55,
+            center=True,
+        )
 
     def _run_gameover(self) -> None:
         """Render the game over screen with full leaderboard."""
